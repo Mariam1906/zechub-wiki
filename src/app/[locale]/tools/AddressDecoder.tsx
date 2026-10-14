@@ -7,7 +7,7 @@ import {
   completeStandaloneReceivers,
   getAddressGuidance,
   type AddressGuidance,
-} from './addressDecoderGuidance';
+} from '@/lib/addressDecoderGuidance';
 
 /*
  * UNIFIED ADDRESS DECODER
@@ -189,6 +189,11 @@ export default function AddressDecoder() {
       setGuidance(getAddressGuidance(result));
       setAddressNetwork(detectZcashNetwork(addr));
     } catch (err: unknown) {
+      // Do not display a partially decoded type if receiver extraction fails.
+      setReceivers([]);
+      setGuidance(null);
+      setAddressType(null);
+      setAddressNetwork('unknown');
       setError(err instanceof Error ? err.message : 'Failed to decode address');
     } finally {
       setLoading(false);
@@ -244,7 +249,17 @@ export default function AddressDecoder() {
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            // Immediately remove guidance for the previous address; do not leave
+            // an outdated privacy assessment visible during the debounce.
+            setInput(e.target.value);
+            setReceivers([]);
+            setAddressType(null);
+            setAddressNetwork('unknown');
+            setGuidance(null);
+            setError(null);
+            setSelectedQR(null);
+          }}
           placeholder={
             wasmReady
               ? 'Paste any Zcash address (t1, zs1, u1, tex1...)'
