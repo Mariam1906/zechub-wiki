@@ -41,6 +41,11 @@ describe("detectZcashNetwork", () => {
     ).toBe("mainnet");
   });
 
+  it("detects transparent P2SH network prefixes without claiming validity", () => {
+    expect(detectZcashNetwork("t3example-script-hash")).toBe("mainnet");
+    expect(detectZcashNetwork("t2example-script-hash")).toBe("testnet");
+  });
+
   it("returns unknown for unrecognized or empty input", () => {
     expect(detectZcashNetwork("")).toBe("unknown");
     expect(detectZcashNetwork("not-a-zcash-address")).toBe("unknown");
