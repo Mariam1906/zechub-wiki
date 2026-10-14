@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { detectZcashNetwork } from './helper';
+import {
+  completeStandaloneReceivers,
+  getAddressGuidance,
+  type AddressGuidance,
+} from './addressDecoderGuidance';
 
 /*
  * UNIFIED ADDRESS DECODER
@@ -70,6 +76,8 @@ export default function AddressDecoder() {
   const [input, setInput] = useState('');
   const [receivers, setReceivers] = useState<Array<{ key: string; address: string }>>([]);
   const [addressType, setAddressType] = useState<string | null>(null);
+  const [guidance, setGuidance] = useState<AddressGuidance | null>(null);
+  const [addressNetwork, setAddressNetwork] = useState<'mainnet' | 'testnet' | 'unknown'>('unknown');
   const [error, setError] = useState<string | null>(null);
   const [wasmReady, setWasmReady] = useState(false);
   const [wasmError, setWasmError] = useState<string | null>(null);
@@ -139,6 +147,8 @@ export default function AddressDecoder() {
     setError(null);
     setReceivers([]);
     setAddressType(null);
+    setGuidance(null);
+    setAddressNetwork('unknown');
     setSelectedQR(null);
 
     const addr = input.trim();
@@ -167,7 +177,7 @@ export default function AddressDecoder() {
         setAddressType(typeFn(addr));
       }
 
-      const result: AddressReceivers = receiversFn(addr);
+      const result: AddressReceivers = completeStandaloneReceivers(addr, receiversFn(addr));
       const list: Array<{ key: string; address: string }> = [];
       if (result.p2pkh) list.push({ key: 'p2pkh', address: result.p2pkh });
       if (result.p2sh) list.push({ key: 'p2sh', address: result.p2sh });
@@ -176,6 +186,8 @@ export default function AddressDecoder() {
       if (result.tex) list.push({ key: 'tex', address: result.tex });
       list.push({ key: 'full', address: addr });
       setReceivers(list);
+      setGuidance(getAddressGuidance(result));
+      setAddressNetwork(detectZcashNetwork(addr));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to decode address');
     } finally {
@@ -258,6 +270,46 @@ export default function AddressDecoder() {
             {addressType}
           </span>
         </div>
+      )}
+
+      {guidance && (
+        <section
+          aria-label="Address network, privacy classification and receiving guidance"
+          className="rounded-xl border border-zinc-200 dark:border-[#243040] bg-zinc-50 dark:bg-[#0f1720] px-4 py-4 space-y-3"
+        >
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-[11px] font-bold rounded-md bg-[#F4B728]/10 px-2.5 py-1 text-[#F4B728]">
+              {addressNetwork === 'mainnet'
+                ? 'Mainnet'
+                : addressNetwork === 'testnet'
+                  ? 'Testnet'
+                  : 'Network unknown'}
+            </span>
+            <span className="text-[11px] font-bold rounded-md bg-zinc-200 dark:bg-[#243040] px-2.5 py-1 text-zinc-700 dark:text-zinc-200">
+              {guidance.classificationLabel}
+            </span>
+          </div>
+          <p className="text-sm text-zinc-700 dark:text-zinc-200 leading-relaxed">
+            {guidance.summary}
+          </p>
+          {guidance.receivingGuidance.map((message) => (
+            <p key={message} className="text-xs leading-relaxed text-zinc-500 dark:text-[#8b9aab]">
+              {message}
+            </p>
+          ))}
+          {guidance.warnings.map((warning) => (
+            <div
+              key={warning}
+              role="alert"
+              className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-800 dark:text-amber-300"
+            >
+              {warning}
+            </div>
+          ))}
+          <p className="text-[11px] text-zinc-400 dark:text-[#5a6a7e]">
+            Address validation and decoding run in your browser using WASM; the pasted address is not sent to an external API.
+          </p>
+        </section>
       )}
 
       {error && (
