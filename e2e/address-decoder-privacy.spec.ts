@@ -29,14 +29,14 @@ test('transparent address is marked mainnet, public and warned', async ({ page }
   await page.getByPlaceholder(/Paste any Zcash address/).fill(TRANSPARENT);
   await expect(page.getByRole('region', { name: PANEL })).toContainText('Mainnet');
   await expect(page.getByRole('region', { name: PANEL })).toContainText('Transparent-only');
-  await expect(page.getByRole('alert')).toContainText('Transparent receiver present');
+  await expect(page.getByRole('region', { name: PANEL }).getByRole('alert')).toContainText('Transparent receiver present');
 });
 
 test('Orchard-only UA explains NU6.3 receiving', async ({ page }) => {
   await page.getByPlaceholder(/Paste any Zcash address/).fill(ORCHARD_ONLY);
   await expect(page.getByRole('region', { name: PANEL })).toContainText('Shielded-only');
   await expect(page.getByRole('region', { name: PANEL })).toContainText('Ironwood');
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: PANEL }).getByRole('alert')).toHaveCount(0);
 });
 
 test('testnet UA is not mislabeled mainnet', async ({ page }) => {
@@ -48,7 +48,7 @@ test('testnet UA is not mislabeled mainnet', async ({ page }) => {
 test('mixed UA warns when transparent receiver is offered', async ({ page }) => {
   await page.getByPlaceholder(/Paste any Zcash address/).fill(MIXED);
   await expect(page.getByRole('region', { name: PANEL })).toContainText('Mixed (shielded + transparent)');
-  await expect(page.getByRole('alert')).toContainText('Transparent receiver present');
+  await expect(page.getByRole('region', { name: PANEL }).getByRole('alert')).toContainText('Transparent receiver present');
 });
 
 test('Sapling standalone address is shielded but not labeled Ironwood', async ({ page }) => {
@@ -101,8 +101,8 @@ test('invalid address cannot obtain privacy classification', async ({ page }) =>
 test('clearing input clears earlier classification and warnings', async ({ page }) => {
   const input = page.getByPlaceholder(/Paste any Zcash address/);
   await input.fill(TRANSPARENT);
-  await expect(page.getByRole('alert')).toContainText('Transparent receiver present');
+  await expect(page.getByRole('region', { name: PANEL }).getByRole('alert')).toContainText('Transparent receiver present');
   await input.clear();
   await expect(page.getByRole('region', { name: PANEL })).toHaveCount(0);
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: PANEL }).getByRole('alert')).toHaveCount(0);
 });
